@@ -1,0 +1,17 @@
+# depslib dependency file v1.0
+1539364669 source:c:\users\andreea\desktop\tema 0\main.cpp
+	<iostream>
+	<cmath>
+	<iomanip>
+	<stdlib.h>
+	<time.h>
+	<chrono>
+
+1539364963 source:d:\facultate\an ii\algoritmi genetici\tema 0\main.cpp
+	<iostream>
+	<cmath>
+	<iomanip>
+	<stdlib.h>
+	<time.h>
+	<chrono>
+
