@@ -10,6 +10,7 @@ MAX_POPULATION_SIZE = 1000
 
 class Chromosome:
     def __init__(self):
+        #TODO: Replace 'value' wih 'genes'
         self.value = []
         self.fitness = 0
         self.generation = 0
@@ -212,10 +213,22 @@ class Population:
 
         return tournament_population
 
+class GeneticOperators:
+    #TODO: Move here Crossover, Mutation and Selection
+    pass
+
 if __name__ == '__main__':
     size_of_population = np.random.randint(2, MAX_POPULATION_SIZE // 100)
     population = Population(size_of_population)
 
     it = 0
     while (it < STOP_CONDITION) or (population.get_size() < MAX_POPULATION_SIZE):
-        
+        #Selection
+        #Pair Selected Fittest Chromosomes 2-by-2
+        #Crossover
+        #Mutation
+        #New Generation (Replace Chromosomes that were not selected in the Selection operation)
+        #Repeat until Termination Criteria is reached
+        pass
+
+#TODO: Save Logs to Disk
