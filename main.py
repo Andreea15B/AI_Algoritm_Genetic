@@ -43,27 +43,27 @@ class Population:
         return self.chromosomes
 
 class GeneticAlgorithm:
-    def evolve(pop):
-        return GeneticAlgorithm.mutate_population(GeneticAlgorithm.crossover_population(pop))
+    def evolve(self,pop):
+        return self.mutate_population(self.crossover_population(pop))
 
-    def crossover_population(pop):
+    def crossover_population(self,pop):
         crossover_pop = Population(0)
         for i in range(NR_ELITE_CHROMOSOMES):
             crossover_pop.get_chromosomes().append(pop.get_chromosomes()[i])
         i = NR_ELITE_CHROMOSOMES
         while i < POPULATION_SIZE:
-            chromosome1 = GeneticAlgorithm.select_tournament_population(pop).get_chromosomes()[0]
-            chromosome2 = GeneticAlgorithm.select_tournament_population(pop).get_chromosomes()[0]
-            crossover_pop.get_chromosomes().append(GeneticAlgorithm.crossover_chromosomes(chromosome1, chromosome2))
+            chromosome1 = self.select_tournament_population(pop).get_chromosomes()[0]
+            chromosome2 = self.select_tournament_population(pop).get_chromosomes()[0]
+            crossover_pop.get_chromosomes().append(self.crossover_chromosomes(chromosome1, chromosome2))
             i += 1
         return crossover_pop
 
-    def mutate_population(pop):
+    def mutate_population(self,pop):
         for i in range(NR_ELITE_CHROMOSOMES, POPULATION_SIZE):
-            GeneticAlgorithm.mutate_chromosome(pop.get_chromosomes()[i])
+            self.mutate_chromosome(pop.get_chromosomes()[i])
         return pop
 
-    def crossover_chromosomes(chromosome1, chromosome2):
+    def crossover_chromosomes(self,chromosome1, chromosome2):
         crossover_chrom = Chromosome()
         for i in range(TARGET_CHROMOSOME.__len__()):
             if random.random() >= 0.5:
@@ -72,14 +72,14 @@ class GeneticAlgorithm:
                 crossover_chrom.get_genes()[i] = chromosome2.get_genes()[i]
         return crossover_chrom
 
-    def mutate_chromosome(chromosome):
+    def mutate_chromosome(self,chromosome):
         for i in range(TARGET_CHROMOSOME.__len__()):
             if random.random() < 0.5:
                 chromosome.get_genes()[i] = 1
             else:
                 chromosome.get_genes()[i] = 0
 
-    def select_tournament_population(pop):
+    def select_tournament_population(self,pop):
         tournament_pop = Population(0)
         i = 0
         while i < TOURNAMENT_SELECTION_SIZE:
@@ -103,8 +103,9 @@ if __name__ == '__main__':
     population.get_chromosomes().sort(key=lambda x: x.get_fitness(), reverse=True)
     print_population(population, 0)
     generation_number = 1
+    genetic = GeneticAlgorithm()
     while population.get_chromosomes()[0].get_fitness() < TARGET_CHROMOSOME.__len__():
-        population = GeneticAlgorithm.evolve(population)
+        population = genetic.evolve(population)
         population.get_chromosomes().sort(key=lambda x: x.get_fitness(), reverse=True)
         print_population(population, generation_number)
         generation_number += 1
