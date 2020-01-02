@@ -1,28 +1,28 @@
 import numpy as np
 import random
+import copy as cp
 
 LENGTH_CHROMOSOME = 10
-STOP_CONDITION = 1000000
+STOP_CONDITION = 100000
 MAX = 99999
 MIN = -99999
-
+MAX_POPULATION_SIZE = 1000
 
 class Chromosome:
     def __init__(self):
         self.value = []
         self.fitness = 0
         self.generation = 0
+
     def random_init(self):
         for _ in range(LENGTH_CHROMOSOME):
             number = np.random.uniform(MIN, MAX)
             self.value.append(number)
 
+        self.set_fitness()
 
     def print_value(self):
         print(self.value)
-
-    def crossover(self, other_chromosome):
-        print('cross')
 
     def uniform_mutation(self):
         length = len(self.value)
@@ -91,11 +91,11 @@ class Chromosome:
             s = np.random.normal(mu, sigma, 1)
             self.value[random_position] = self.value[random_position] + s[0]
 
-    def selection(self):
-        print('selectia turneu')
+    def set_fitness(self):
+        self.fitness = sum(self.value) / len(self.value)
 
-    def fitness_(self):
-        print('fitness')
+    def get_fitness(self):
+        return self.fitness
 
     def single_point_crossver(self,second_chromosome):
         length=len(second_chromosome.value)
@@ -111,7 +111,6 @@ class Chromosome:
                 first_child.value.append(second_chromosome.value[i])
                 second_child.value.append(self.value[i])
         return (first_child,second_child)
-
     
     def two_points_crossver(self,second_chromosome):
         length=len(self.value)
@@ -127,8 +126,6 @@ class Chromosome:
                 first_child.value.append(second_chromosome.value[i])
                 second_child.value.append(self.value[i])
         return (first_child,second_child)
-
-
 
     def uniform_crossver(self,second_chromosome):
         length=len(self.value)
@@ -177,18 +174,48 @@ class Chromosome:
                 second_child.value.append(second_chromosome.value[i])
         return (first_child,second_child)
 
+class Population:
+    def __init__(self, size):
+        self.chromosomes = []
+        self.size = size
+        i = 0
+        while i < size:
+            chromosome = Chromosome()
+            self.chromosomes.append(chromosome.random_init())
+            i += 1
 
+    def get_size(self):
+        return self.size
 
+    def set_chromosomes(self, chromosomes):
+        self.chromosomes = cp.deepcopy(chromosomes)
+        self.size = len(chromosomes)
 
-c = Chromosome()
-c.random_init()
-print(c.value)
-# c.print_value()
-# c.gaussion_mutation()
-# c.print_value()
-d=Chromosome()
-d.random_init()
-print(d.value)
-tuple=c.ring_crossover(d)
-print(tuple[0].value)
-print(tuple[1].value)
+    def get_chromosomes(self):
+        return self.chromosomes
+
+    def tournament_population_selection(self):
+        J_NUMBER = 25
+        K_NUMBER = np.random.randint(J_NUMBER * 2, MAX_POPULATION_SIZE / 2)
+
+        tournament_population = Population(0)
+
+        indices = np.random.randint(0, MAX_POPULATION_SIZE, size = K_NUMBER)
+
+        it = 0
+        while it < K_NUMBER:
+            tournament_population.get_chromosomes().append(self.get_chromosomes()[indices[it]])
+            it = it + 1
+
+        tournament_population.get_chromosomes().sort(key = lambda x: x.get_fitness(), reverse = True)
+        tournament_population.set_chromosomes(tournament_population.get_chromosomes()[0:J_NUMBER])
+
+        return tournament_population
+
+if __name__ == '__main__':
+    size_of_population = np.random.randint(2, MAX_POPULATION_SIZE // 100)
+    population = Population(size_of_population)
+
+    it = 0
+    while (it < STOP_CONDITION) or (population.get_size() < MAX_POPULATION_SIZE):
+        
