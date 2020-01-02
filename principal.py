@@ -12,9 +12,11 @@ class Chromosome:
         self.value = []
         self.fitness = 0
         self.generation = 0
+    def random_init(self):
         for _ in range(LENGTH_CHROMOSOME):
             number = np.random.uniform(MIN, MAX)
             self.value.append(number)
+
 
     def print_value(self):
         print(self.value)
@@ -95,25 +97,98 @@ class Chromosome:
     def fitness_(self):
         print('fitness')
 
-    def single_point_crossver(self):
-       print('')
-    
-    def two_point_crossver(self):
-        print('two')
+    def single_point_crossver(self,second_chromosome):
+        length=len(second_chromosome.value)
+        cutting_point=random.randrange(length)
+        print(cutting_point)
+        first_child=Chromosome()
+        second_child=Chromosome()
+        for i in range(length):
+            if(i<=cutting_point):
+                first_child.value.append(self.value[i])
+                second_child.value.append(second_chromosome.value[i])
+            else:
+                first_child.value.append(second_chromosome.value[i])
+                second_child.value.append(self.value[i])
+        return (first_child,second_child)
 
-    def uniform_crossver(self):
-        print('Each gene (bit) is selected randomly from one of the corresponding genes of the parent chromosomes.')
-        print('Use tossing of a coin as an example technique.')
     
-    def davis_order_crossover(self):
-        print('helppp')
+    def two_points_crossver(self,second_chromosome):
+        length=len(self.value)
+        first_cutting_point=random.randrange(1,length-3)
+        second_cutting_point=random.randrange(first_cutting_point+2,length-1)
+        first_child=Chromosome()
+        second_child=Chromosome()
+        for i in range(length):
+            if i<=first_cutting_point or i>=second_cutting_point:
+                first_child.value.append(self.value[i])
+                second_child.value.append(second_chromosome.value[i])
+            else:
+                first_child.value.append(second_chromosome.value[i])
+                second_child.value.append(self.value[i])
+        return (first_child,second_child)
 
-    def ring_crossover(self):
-        print('SADDDD')
+
+
+    def uniform_crossver(self,second_chromosome):
+        length=len(self.value)
+        first_child=Chromosome()
+        second_child=Chromosome()
+        for i in range(length):
+            value=random.random()
+            if value<0.5:
+                first_child.value.append(self.value[i])
+                second_child.value.append(second_chromosome.value[i])
+            else:
+                first_child.value.append(second_chromosome.value[i])
+                second_child.value.append(self.value[i])
+        return (first_child,second_child)
+    
+    def single_arithmetic_crossover(self,second_chromosome):
+        length=len(self.value)
+        alpha=random.random()
+        gene_position=random.randrange(length)
+        first_child=Chromosome()
+        second_child=Chromosome()
+        for i in range(length):
+            if i==gene_position:
+                first_child.value.append(alpha*self.value[i]+(1-alpha)*second_chromosome.value[i])
+                second_child.value.append(alpha*second_chromosome.value[i]+(1-alpha)*self.value[i])
+            else:
+                first_child.value.append(self.value[i])
+                second_child.value.append(second_chromosome.value[i])
+        return (first_child,second_child)
+
+    def ring_crossover(self,second_chromosome):
+        length=len(self.value)
+        cutting_point=random.randrange(length)
+        print(cutting_point)
+        first_child=Chromosome()
+        second_child=Chromosome()
+        for i in range(length):
+            if i<cutting_point:
+                first_child.value.append(self.value[i])
+            else:
+                second_child.value.append(self.value[i])
+        for i in range(length):
+            if i <length-cutting_point:
+                first_child.value.append(second_chromosome.value[i])
+            else:
+                second_child.value.append(second_chromosome.value[i])
+        return (first_child,second_child)
+
+
 
 
 c = Chromosome()
+c.random_init()
+print(c.value)
 # c.print_value()
 # c.gaussion_mutation()
 # c.print_value()
-c.single_point_crossver()
+d=Chromosome()
+d.random_init()
+print(d.value)
+tuple=c.ring_crossover(d)
+print(tuple[0].value)
+print(tuple[1].value)
