@@ -95,8 +95,25 @@ class Chromosome:
     def fitness_(self):
         print('fitness')
 
+    def single_point_crossver(self):
+       print('')
+    
+    def two_point_crossver(self):
+        print('two')
+
+    def uniform_crossver(self):
+        print('Each gene (bit) is selected randomly from one of the corresponding genes of the parent chromosomes.')
+        print('Use tossing of a coin as an example technique.')
+    
+    def davis_order_crossover(self):
+        print('helppp')
+
+    def ring_crossover(self):
+        print('SADDDD')
+
 
 c = Chromosome()
-c.print_value()
-c.gaussion_mutation()
-c.print_value()
+# c.print_value()
+# c.gaussion_mutation()
+# c.print_value()
+c.single_point_crossver()
