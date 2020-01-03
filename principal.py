@@ -8,7 +8,7 @@ STOP_CONDITION = 100000
 MAX = 99999
 MIN = -99999
 BEST_POSSIBLE_FITNESS = 0
-MAX_POPULATION_SIZE = 1000
+MAX_POPULATION_SIZE = 36
 K_INDIVIDUALS = int(sqrt(MAX_POPULATION_SIZE))
 
 class Chromosome:
@@ -238,14 +238,7 @@ if __name__ == '__main__':
     population = Population(MAX_POPULATION_SIZE)
 
     generation = 0
-    while (generation < STOP_CONDITION) or (population.get_chromosomes()[0] == MAX - 1) or (population.get_total_fitness() >= 0):
-        #Selection
-        #Pair Selected Fittest Chromosomes 1-by-1
-        #Crossover
-        #Mutation
-        #New Generation (Replace Chromosomes that were not selected in the Selection operation)
-        #Repeat until Termination Criteria is reached
-
+    while (generation < STOP_CONDITION) or (population.get_chromosomes()[0] == MAX - 1) or (population.get_total_fitness() < 0):
         selected_individuals = population.tournament_population_selection().get_chromosomes()
         selected_individuals_len = len(selected_individuals)
 
@@ -255,11 +248,16 @@ if __name__ == '__main__':
             for j in range(i + 1, selected_individuals_len):
                 if index > 1:
                     (offspring1, offspring2) = selected_individuals[i].single_point_crossver(selected_individuals[j])
-                    offspring1.uniform_mutation()
-                    offspring2.uniform_mutation()
+                    offspring1.scramble_mutation()
+                    offspring2.scramble_mutation()
 
-                    population.get_chromosomes()[index] = offspring1
-                    population.get_chromosomes()[index - 1] = offspring2
+                    print(offspring1.print_value())
+                    print(offspring2.print_value())
+
+                    print(population.get_chromosomes()[-1].print_value())
+                    population.get_chromosomes()[index] = cp.deepcopy(offspring1)
+                    print(population.get_chromosomes()[-1].print_value())
+                    population.get_chromosomes()[index - 1] = cp.deepcopy(offspring2)
 
                     index = index - 2
                 else:
@@ -268,7 +266,9 @@ if __name__ == '__main__':
         population.get_chromosomes().sort(key = lambda x: x.get_fitness(), reverse = True)
         population.update_total_fitness()
 
-        print('Generation: ' + str(generation) + ' Total fittnes: ' + str(population.get_total_fitness()) + ' Best Chromose Fitness: ' + str(population.get_chromosomes()[0].get_fitness()))
+        print('Generation: ' + str(generation) + ' Total fittnes: ' + str(population.get_total_fitness()) + ' Best Chromosome Fitness: ' + str(population.get_chromosomes()[0].get_fitness()))
+
+        print('Last Chromosome Genes:' + str(population.get_chromosomes()[-1].print_value()))
 
         generation = generation + 1
 
