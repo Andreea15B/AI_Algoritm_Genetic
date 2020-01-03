@@ -1,111 +1,175 @@
-import random
+import numpy as np
+import copy as cp
+import random as rand
 
-POPULATION_SIZE = 8
-NR_ELITE_CHROMOSOMES = 1
-TOURNAMENT_SELECTION_SIZE = 4
-MUTATION_RATE = 0.25
-TARGET_CHROMOSOME = [1,1,0,1,0,0,1,1,1,0]
+POPULATION_SIZE = 1000
+CHROMOSOME_SIZE = 10
+MIN_ALLELE_VALUE = 99999
+MAX_ALLELE_VALUE = -99999
+MAX_NUM_OF_GENERATIONS = 100000
+K_SELECTED_CHROMOSOMES = 1000
 
 class Chromosome:
-    def __init__(self):
+    def __init__(self, generation):
+        self.generation = generation
         self.genes = []
-        self.fitness = 0
-        i=0
-        while i < TARGET_CHROMOSOME.__len__():
-            if random.random() >= 0.5:
-                self.genes.append(1)
-            else:
-                self.genes.append(0)
-            i += 1
+        for _ in range(CHROMOSOME_SIZE):
+            allele = np.random.uniform(MIN_ALLELE_VALUE, MAX_ALLELE_VALUE)
+            self.genes.append(allele)
+        self.fitness = fitness_function(self)
 
     def get_genes(self):
         return self.genes
 
+    def set_genes(self, genes):
+        self.genes = []
+        self.genes = cp.deepcopy(genes)
+        return None
+
     def get_fitness(self):
-        self.fitness = 0
-        for i in range(self.genes.__len__()):
-            if self.genes[i] == TARGET_CHROMOSOME[i]:
-                self.fitness += 1
         return self.fitness
 
-    def __str__(self):
-        return self.genes.__str__()
+    def get_generation(self):
+        return self.generation
 
 class Population:
-    def __init__(self, size):
+    def __init__(self, size, generation):
+        self.size = size
         self.chromosomes = []
-        i = 0
-        while i < size:
-            self.chromosomes.append(Chromosome())
-            i += 1
+        self.total_fitness = 0
+        for _ in range(self.size):
+            chromosome = Chromosome(generation)
+            self.chromosomes.append(chromosome)
+            self.total_fitness = self.total_fitness + chromosome.get_fitness()
 
     def get_chromosomes(self):
         return self.chromosomes
 
-class GeneticAlgorithm:
-    def evolve(self,pop):
-        return self.mutate_population(self.crossover_population(pop))
+    def set_chromosomes(self, chromosomes):
+        self.chromosomes = []
+        self.chromosomes = cp.deepcopy(chromosomes)
+        return None
 
-    def crossover_population(self,pop):
-        crossover_pop = Population(0)
-        for i in range(NR_ELITE_CHROMOSOMES):
-            crossover_pop.get_chromosomes().append(pop.get_chromosomes()[i])
-        i = NR_ELITE_CHROMOSOMES
-        while i < POPULATION_SIZE:
-            chromosome1 = self.select_tournament_population(pop).get_chromosomes()[0]
-            chromosome2 = self.select_tournament_population(pop).get_chromosomes()[0]
-            crossover_pop.get_chromosomes().append(self.crossover_chromosomes(chromosome1, chromosome2))
-            i += 1
-        return crossover_pop
+    def get_size(self):
+        return self.size
 
-    def mutate_population(self,pop):
-        for i in range(NR_ELITE_CHROMOSOMES, POPULATION_SIZE):
-            self.mutate_chromosome(pop.get_chromosomes()[i])
-        return pop
+    def set_size(self, size):
+        self.size = size
+        return None
 
-    def crossover_chromosomes(self,chromosome1, chromosome2):
-        crossover_chrom = Chromosome()
-        for i in range(TARGET_CHROMOSOME.__len__()):
-            if random.random() >= 0.5:
-                crossover_chrom.get_genes()[i] = chromosome1.get_genes()[i]
-            else:
-                crossover_chrom.get_genes()[i] = chromosome2.get_genes()[i]
-        return crossover_chrom
+    def get_total_fitness(self):
+        return self.total_fitness
 
-    def mutate_chromosome(self,chromosome):
-        for i in range(TARGET_CHROMOSOME.__len__()):
-            if random.random() < 0.5:
-                chromosome.get_genes()[i] = 1
-            else:
-                chromosome.get_genes()[i] = 0
+    def set_total_fitness(self, total_fitness):
+        self.total_fitness = total_fitness
+        return None
 
-    def select_tournament_population(self,pop):
-        tournament_pop = Population(0)
-        i = 0
-        while i < TOURNAMENT_SELECTION_SIZE:
-            tournament_pop.get_chromosomes().append(pop.get_chromosomes()[random.randrange(0, POPULATION_SIZE)])
-            i += 1
-        tournament_pop.get_chromosomes().sort(key=lambda x: x.get_fitness(), reverse=True)
-        return tournament_pop
+    def update_total_fitness(self):
+        self.total_fitness = 0
+        for it in range(self.size):
+            self.total_fitness = self.total_fitness + self.chromosomes[it].get_fitness()
+        return None
 
-def print_population(pop, gen_number):
+class GeneticOperators:
+    def __init__(self):
+        pass
+
+    # Selection
+    def tournament_population_selection(self, population):
+        J_SELECTED_CHROMOSOMES = np.random.randint(K_SELECTED_CHROMOSOMES / 4, K_SELECTED_CHROMOSOMES + 1)
+
+        tournament_population = Population(0, J_SELECTED_CHROMOSOMES)
+        slected_chromosomes_indices = np.random.randint(0, population.get_size(), size = K_SELECTED_CHROMOSOMES)
+
+        for it in range(K_SELECTED_CHROMOSOMES):
+            tournament_population.get_chromosomes().append(population.get_chromosomes()[slected_chromosomes_indices[it]])
+
+        tournament_population.get_chromosomes().sort(key = lambda x: x.get_fitness(), reverse = True)
+        tournament_population.set_chromosomes(tournament_population.get_chromosomes()[0 : J_SELECTED_CHROMOSOMES])
+
+        return tournament_population
+
+    # Crossover
+    def single_point_crossover(self, first_chromosome, second_chromosome, generation):
+        if ((first_chromosome.get_generation() == second_chromosome.get_generation()) and
+            (first_chromosome.get_generation() == generation - 1) and
+            (second_chromosome.get_generation() == generation - 1)):
+
+            first_offspring = Chromosome(generation)
+            second_offspring = Chromosome(generation)
+
+            cutting_point = rand.randrange(CHROMOSOME_SIZE)
+
+            for it in range(CHROMOSOME_SIZE):
+                if it <= cutting_point:
+                    first_offspring.get_genes()[it] = first_chromosome.get_genes()[it]
+                    second_offspring.get_genes()[it] = second_chromosome.get_genes()[it]
+                else:
+                    first_offspring.get_genes()[it] = second_chromosome.get_genes()[it]
+                    second_offspring.get_genes()[it] = first_chromosome.get_genes()[it]
+
+            return (first_offspring, second_offspring)
+        else:
+            return None
+
+    # Mutation
+    def uniform_mutation(self, chromosome):
+        rand_gene = rand.randrange(CHROMOSOME_SIZE)
+        chromosome.get_genes()[rand_gene] = np.random.uniform(MIN_ALLELE_VALUE, MAX_ALLELE_VALUE)
+        return chromosome
+
+def evolve(population, generation):
+    new_population = Population(0, generation)
+    genetic_operators = GeneticOperators()
+    tournament_population = genetic_operators.tournament_population_selection(population)
+
+    new_population_size = 0
+    for first_it in range(0, tournament_population.get_size()):
+        for second_it in range(first_it + 1, tournament_population.get_size()):
+            first_offspring, second_offspring = genetic_operators.single_point_crossover(
+                                                    tournament_population.get_chromosomes()[first_it],
+                                                    tournament_population.get_chromosomes()[second_it],
+                                                    generation)
+            
+            first_offspring = genetic_operators.uniform_mutation(first_offspring)
+            second_offspring = genetic_operators.uniform_mutation(second_offspring)
+
+            if None != first_offspring:
+                new_population_size += 1
+
+            if None != second_offspring:
+                new_population_size += 1
+
+    new_population.set_size(new_population_size)
+    new_population.update_total_fitness()
+
+    return new_population
+
+def fitness_function(chromosome):
+    fitness = 0
+    for allele in chromosome.get_genes():
+        fitness += allele
+    return fitness
+
+def print_population(population, generation):
     print("\n---------------------------------")
-    print("Generation #", gen_number, "| Fittest chromosome fitness: ", pop.get_chromosomes()[0].get_fitness())
-    print("Target chromosome: ", TARGET_CHROMOSOME)
+    print("Generation #", generation, "| Fittest chromosome fitness: ", population.get_chromosomes()[0].get_fitness())
     print("\n---------------------------------")
-    i = 0
-    for x in pop.get_chromosomes():
-        print("Chromosome #", i, ": ", x, " | Fitness: ", x.get_fitness())
-        i += 1
+
+    it = 0
+    for chromosome in population.get_chromosomes():
+        print("Chromosome #", it, ": ", chromosome, " | Fitness: ", chromosome.get_fitness())
+        it += 1
 
 if __name__ == '__main__':
-    population = Population(POPULATION_SIZE)
-    population.get_chromosomes().sort(key=lambda x: x.get_fitness(), reverse=True)
+    population = Population(POPULATION_SIZE, 0)
+
+    population.get_chromosomes().sort(key = lambda chromosome: chromosome.get_fitness(), reverse = True)
     print_population(population, 0)
-    generation_number = 1
-    genetic = GeneticAlgorithm()
-    while population.get_chromosomes()[0].get_fitness() < TARGET_CHROMOSOME.__len__():
-        population = genetic.evolve(population)
-        population.get_chromosomes().sort(key=lambda x: x.get_fitness(), reverse=True)
-        print_population(population, generation_number)
-        generation_number += 1
+
+    generation = 1
+    while generation < MAX_NUM_OF_GENERATIONS:
+        population = evolve(population, generation)
+        population.get_chromosomes().sort(key = lambda chromosome: chromosome.get_fitness(), reverse = True)
+        print_population(population, generation)
+        generation += 1
