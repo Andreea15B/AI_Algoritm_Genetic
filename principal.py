@@ -1,12 +1,15 @@
 import numpy as np
 import random
 import copy as cp
+from math import sqrt
 
 LENGTH_CHROMOSOME = 10
 STOP_CONDITION = 100000
 MAX = 99999
 MIN = -99999
+BEST_POSSIBLE_FITNESS = 0
 MAX_POPULATION_SIZE = 1000
+K_INDIVIDUALS = int(sqrt(MAX_POPULATION_SIZE))
 
 class Chromosome:
     def __init__(self):
@@ -14,6 +17,12 @@ class Chromosome:
         self.value = []
         self.fitness = 0
         self.generation = 0
+
+    def set_fitness(self):
+        self.fitness = sum(self.value) / len(self.value)
+
+    def get_fitness(self):
+        return self.fitness
 
     def random_init(self):
         for _ in range(LENGTH_CHROMOSOME):
@@ -92,16 +101,9 @@ class Chromosome:
             s = np.random.normal(mu, sigma, 1)
             self.value[random_position] = self.value[random_position] + s[0]
 
-    def set_fitness(self):
-        self.fitness = sum(self.value) / len(self.value)
-
-    def get_fitness(self):
-        return self.fitness
-
     def single_point_crossver(self,second_chromosome):
         length=len(second_chromosome.value)
         cutting_point=random.randrange(length)
-        print(cutting_point)
         first_child=Chromosome()
         second_child=Chromosome()
         for i in range(length):
@@ -112,7 +114,7 @@ class Chromosome:
                 first_child.value.append(second_chromosome.value[i])
                 second_child.value.append(self.value[i])
         return (first_child,second_child)
-    
+
     def two_points_crossver(self,second_chromosome):
         length=len(self.value)
         first_cutting_point=random.randrange(1,length-3)
@@ -141,7 +143,7 @@ class Chromosome:
                 first_child.value.append(second_chromosome.value[i])
                 second_child.value.append(self.value[i])
         return (first_child,second_child)
-    
+
     def single_arithmetic_crossover(self,second_chromosome):
         length=len(self.value)
         alpha=random.random()
@@ -160,7 +162,6 @@ class Chromosome:
     def ring_crossover(self,second_chromosome):
         length=len(self.value)
         cutting_point=random.randrange(length)
-        print(cutting_point)
         first_child=Chromosome()
         second_child=Chromosome()
         for i in range(length):
@@ -179,37 +180,53 @@ class Population:
     def __init__(self, size):
         self.chromosomes = []
         self.size = size
-        i = 0
-        while i < size:
+        self.total_fitness = 0
+
+        it = 0
+        while it < size:
             chromosome = Chromosome()
-            self.chromosomes.append(chromosome.random_init())
-            i += 1
+            chromosome.random_init()
+            self.chromosomes.append(chromosome)
+            self.total_fitness = self.total_fitness + chromosome.get_fitness()
+            it = it + 1
+
+        self.chromosomes.sort(key = lambda x: x.get_fitness(), reverse = True)
 
     def get_size(self):
         return self.size
+
+    def get_total_fitness(self):
+        return self.total_fitness
+
+    def get_chromosomes(self):
+        return self.chromosomes
 
     def set_chromosomes(self, chromosomes):
         self.chromosomes = cp.deepcopy(chromosomes)
         self.size = len(chromosomes)
 
-    def get_chromosomes(self):
-        return self.chromosomes
+    def update_total_fitness(self):
+        _total_fitness = 0
+
+        for it in range(0, self.size):
+            _total_fitness = _total_fitness + self.chromosomes[it].get_fitness()
+
+        self.total_fitness = _total_fitness
 
     def tournament_population_selection(self):
-        J_NUMBER = 25
-        K_NUMBER = np.random.randint(J_NUMBER * 2, MAX_POPULATION_SIZE / 2)
+        J_INDIVIDUALS = np.random.randint(2, K_INDIVIDUALS // 2)
 
         tournament_population = Population(0)
 
-        indices = np.random.randint(0, MAX_POPULATION_SIZE, size = K_NUMBER)
+        indices = np.random.randint(0, self.get_size(), size = K_INDIVIDUALS)
 
         it = 0
-        while it < K_NUMBER:
+        while it < K_INDIVIDUALS:
             tournament_population.get_chromosomes().append(self.get_chromosomes()[indices[it]])
             it = it + 1
 
         tournament_population.get_chromosomes().sort(key = lambda x: x.get_fitness(), reverse = True)
-        tournament_population.set_chromosomes(tournament_population.get_chromosomes()[0:J_NUMBER])
+        tournament_population.set_chromosomes(tournament_population.get_chromosomes()[0:J_INDIVIDUALS])
 
         return tournament_population
 
@@ -218,17 +235,41 @@ class GeneticOperators:
     pass
 
 if __name__ == '__main__':
-    size_of_population = np.random.randint(2, MAX_POPULATION_SIZE // 100)
-    population = Population(size_of_population)
+    population = Population(MAX_POPULATION_SIZE)
 
-    it = 0
-    while (it < STOP_CONDITION) or (population.get_size() < MAX_POPULATION_SIZE):
+    generation = 0
+    while (generation < STOP_CONDITION) or (population.get_chromosomes()[0] == MAX - 1) or (population.get_total_fitness() >= 0):
         #Selection
-        #Pair Selected Fittest Chromosomes 2-by-2
+        #Pair Selected Fittest Chromosomes 1-by-1
         #Crossover
         #Mutation
         #New Generation (Replace Chromosomes that were not selected in the Selection operation)
         #Repeat until Termination Criteria is reached
-        pass
+
+        selected_individuals = population.tournament_population_selection().get_chromosomes()
+        selected_individuals_len = len(selected_individuals)
+
+        index = population.get_size() - 1
+
+        for i in range(0, selected_individuals_len - 1):
+            for j in range(i + 1, selected_individuals_len):
+                if index > 1:
+                    (offspring1, offspring2) = selected_individuals[i].single_point_crossver(selected_individuals[j])
+                    offspring1.uniform_mutation()
+                    offspring2.uniform_mutation()
+
+                    population.get_chromosomes()[index] = offspring1
+                    population.get_chromosomes()[index - 1] = offspring2
+
+                    index = index - 2
+                else:
+                    break
+
+        population.get_chromosomes().sort(key = lambda x: x.get_fitness(), reverse = True)
+        population.update_total_fitness()
+
+        print('Generation: ' + str(generation) + ' Total fittnes: ' + str(population.get_total_fitness()) + ' Best Chromose Fitness: ' + str(population.get_chromosomes()[0].get_fitness()))
+
+        generation = generation + 1
 
 #TODO: Save Logs to Disk
