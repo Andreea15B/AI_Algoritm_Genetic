@@ -143,7 +143,10 @@ def evolve(population, generation):
     new_population.set_size(new_population_size)
     new_population.update_total_fitness()
 
-    return new_population
+    if new_population_size != 0:
+        return new_population
+    else:
+        return population
 
 def fitness_function(chromosome):
     fitness = 0
