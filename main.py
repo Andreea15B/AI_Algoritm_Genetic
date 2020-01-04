@@ -315,12 +315,13 @@ def fitness_function(chromosome):
 
 def print_population(population, generation, most_fittest_chromosome):
     print("\n---------------------------------")
-    print("Generation #{0} | Size: {1} | Total Fitness: {2} | Fittest chromosome fitness: {3} | Most fittest chromosome: {4}\n".format(
+    print("Generation #{0} | Size: {1} | Total Fitness: {2} | Fittest chromosome fitness: {3} | Most fittest chromosome generation #{4} and fitness: {5}\n".format(
         generation,
         population.get_size(),
         population.get_total_fitness(),
         population.get_chromosomes()[0].get_fitness(),
-        most_fittest_chromosome)
+        most_fittest_chromosome.get_generation(),
+        most_fittest_chromosome.get_fitness())
     )
     print("\n---------------------------------")
 
@@ -329,19 +330,20 @@ if __name__ == '__main__':
 
     with open(LOGS_FILE_PATH, "w+") as fd:
         population = Population(POPULATION_SIZE, 0)
-        most_fittest_chromosome = 0
+        most_fittest_chromosome = Chromosome(0)
 
         population.get_chromosomes().sort(key = lambda chromosome: chromosome.get_fitness(), reverse = True)
-        most_fittest_chromosome = population.get_chromosomes()[0].get_fitness()
+        most_fittest_chromosome = cp.deepcopy(population.get_chromosomes()[0])
 
         print_population(population, 0, most_fittest_chromosome)
         fd.write(
-            "Generation #{0} | Size: {1} | Total Fitness: {2} | Fittest chromosome fitness: {3} | Most fittest chromosome: {4}\n".format(
+            "Generation #{0} | Size: {1} | Total Fitness: {2} | Fittest chromosome fitness: {3} | Most fittest chromosome generation #{4} and fitness: {5}\n".format(
                 0,
                 population.get_size(),
                 population.get_total_fitness(),
                 population.get_chromosomes()[0].get_fitness(),
-                most_fittest_chromosome
+                most_fittest_chromosome.get_generation(),
+                most_fittest_chromosome.get_fitness()
             )
         )
 
@@ -349,17 +351,18 @@ if __name__ == '__main__':
         while (generation < MAX_NUM_OF_GENERATIONS) and (population.get_chromosomes()[0].get_fitness() < BEST_FITNESS):
             population = evolve(population, generation)
             population.get_chromosomes().sort(key = lambda chromosome: chromosome.get_fitness(), reverse = True)
-            if population.get_chromosomes()[0].get_fitness() > most_fittest_chromosome:
-                most_fittest_chromosome = population.get_chromosomes()[0].get_fitness()
+            if population.get_chromosomes()[0].get_fitness() > most_fittest_chromosome.get_fitness():
+                most_fittest_chromosome = cp.deepcopy(population.get_chromosomes()[0])
 
             print_population(population, generation, most_fittest_chromosome)
             fd.write(
-                "Generation #{0} | Size: {1} | Total Fitness: {2} | Fittest chromosome fitness: {3} | Most fittest chromosome: {4}\n".format(
+                "Generation #{0} | Size: {1} | Total Fitness: {2} | Fittest chromosome fitness: {3} | Most fittest chromosome generation #{4} and fitness: {5}\n".format(
                     generation,
                     population.get_size(),
                     population.get_total_fitness(),
                     population.get_chromosomes()[0].get_fitness(),
-                    most_fittest_chromosome
+                    most_fittest_chromosome.get_generation(),
+                    most_fittest_chromosome.get_fitness()
                 )
             )
 
