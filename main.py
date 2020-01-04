@@ -72,9 +72,6 @@ class Population:
         return total_fitness
 
 class GeneticOperators:
-    def __init__(self):
-        pass
-
     # Selection
     def tournament_population_selection(self, population):
         J_SELECTED_CHROMOSOMES = np.random.randint(K_SELECTED_CHROMOSOMES / 4, K_SELECTED_CHROMOSOMES + 1)
@@ -128,21 +125,16 @@ def evolve(population, generation):
     new_size = 0
     for first_it in range(0, tournament_population.get_size()):
         for second_it in range(first_it + 1, tournament_population.get_size()):
-            first_offspring, second_offspring = genetic_operators.single_point_crossover(
-                                                    tournament_population.get_chromosomes()[first_it],
-                                                    tournament_population.get_chromosomes()[second_it],
-                                                    generation)
-            
-            first_offspring = genetic_operators.uniform_mutation(first_offspring)
-            second_offspring = genetic_operators.uniform_mutation(second_offspring)
+            offsprings = genetic_operators.single_point_crossover(tournament_population.get_chromosomes()[first_it], tournament_population.get_chromosomes()[second_it], generation)
 
-            if None != first_offspring:
+            if (None != offsprings) and (len(offsprings) == 2):
+                first_offspring = genetic_operators.uniform_mutation(offsprings[0])
                 new_chromosomes.append(first_offspring)
-                new_size += 1
 
-            if None != second_offspring:
+                second_offspring = genetic_operators.uniform_mutation(offsprings[1])
                 new_chromosomes.append(second_offspring)
-                new_size += 1
+                
+                new_size += 2
 
         if new_size > POPULATION_SIZE:
             break
