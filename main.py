@@ -8,6 +8,7 @@ MIN_ALLELE_VALUE = 99999
 MAX_ALLELE_VALUE = -99999
 MAX_NUM_OF_GENERATIONS = 100000
 K_SELECTED_CHROMOSOMES = 1000
+TARGET_TOTAL_FITNESS = 0
 
 class Chromosome:
     def __init__(self, generation):
@@ -64,11 +65,11 @@ class Population:
         self.total_fitness = total_fitness
         return None
 
-    def update_total_fitness(self):
-        self.total_fitness = 0
+    def compute_total_fitness(self):
+        total_fitness = 0
         for it in range(self.size):
-            self.total_fitness = self.total_fitness + self.chromosomes[it].get_fitness()
-        return None
+            total_fitness += self.chromosomes[it].get_fitness()
+        return total_fitness
 
 class GeneticOperators:
     def __init__(self):
@@ -78,7 +79,7 @@ class GeneticOperators:
     def tournament_population_selection(self, population):
         J_SELECTED_CHROMOSOMES = np.random.randint(K_SELECTED_CHROMOSOMES / 4, K_SELECTED_CHROMOSOMES + 1)
 
-        tournament_population = Population(0, J_SELECTED_CHROMOSOMES)
+        tournament_population = Population(J_SELECTED_CHROMOSOMES, 0)
         slected_chromosomes_indices = np.random.randint(0, population.get_size(), size = K_SELECTED_CHROMOSOMES)
 
         for it in range(K_SELECTED_CHROMOSOMES):
@@ -123,7 +124,8 @@ def evolve(population, generation):
     genetic_operators = GeneticOperators()
     tournament_population = genetic_operators.tournament_population_selection(population)
 
-    new_population_size = 0
+    new_chromosomes = []
+    new_size = 0
     for first_it in range(0, tournament_population.get_size()):
         for second_it in range(first_it + 1, tournament_population.get_size()):
             first_offspring, second_offspring = genetic_operators.single_point_crossover(
@@ -135,18 +137,24 @@ def evolve(population, generation):
             second_offspring = genetic_operators.uniform_mutation(second_offspring)
 
             if None != first_offspring:
-                new_population_size += 1
+                new_chromosomes.append(first_offspring)
+                new_size += 1
 
             if None != second_offspring:
-                new_population_size += 1
+                new_chromosomes.append(second_offspring)
+                new_size += 1
 
-    new_population.set_size(new_population_size)
-    new_population.update_total_fitness()
+        if new_size > POPULATION_SIZE:
+            break
 
-    if new_population_size != 0:
-        return new_population
-    else:
-        return population
+    if new_size == 0:
+        print("Err @ Population None!")
+
+    new_population.set_chromosomes(new_chromosomes)
+    new_population.set_size(new_size)
+    new_population.set_total_fitness(new_population.compute_total_fitness())
+
+    return new_population
 
 def fitness_function(chromosome):
     fitness = 0
@@ -156,23 +164,33 @@ def fitness_function(chromosome):
 
 def print_population(population, generation):
     print("\n---------------------------------")
-    print("Generation #", generation, "| Fittest chromosome fitness: ", population.get_chromosomes()[0].get_fitness())
+    print("Generation #{0} | Size: {1} | Total Fitness: {2} | Fittest chromosome fitness: {3}".format(
+        generation,
+        population.get_size(),
+        population.get_total_fitness(),
+        population.get_chromosomes()[0].get_fitness()))
     print("\n---------------------------------")
 
-    it = 0
-    for chromosome in population.get_chromosomes():
-        print("Chromosome #", it, ": ", chromosome, " | Fitness: ", chromosome.get_fitness())
-        it += 1
-
 if __name__ == '__main__':
-    population = Population(POPULATION_SIZE, 0)
+    LOGS_FILE_PATH = "logs.txt"
 
-    population.get_chromosomes().sort(key = lambda chromosome: chromosome.get_fitness(), reverse = True)
-    print_population(population, 0)
+    with open(LOGS_FILE_PATH, "w+") as fd:
+        population = Population(POPULATION_SIZE, 0)
 
-    generation = 1
-    while generation < MAX_NUM_OF_GENERATIONS:
-        population = evolve(population, generation)
         population.get_chromosomes().sort(key = lambda chromosome: chromosome.get_fitness(), reverse = True)
-        print_population(population, generation)
-        generation += 1
+        print_population(population, 0)
+
+        generation = 1
+        while (generation < MAX_NUM_OF_GENERATIONS) or (population.get_chromosomes()[0].get_fitness() == MAX_ALLELE_VALUE):
+            population = evolve(population, generation)
+            population.get_chromosomes().sort(key = lambda chromosome: chromosome.get_fitness(), reverse = True)
+            print_population(population, generation)
+            fd.write(
+                "Generation #{0} | Size: {1} | Total Fitness: {2} | Fittest chromosome fitness: {3}\n".format(
+                    generation,
+                    population.get_size(),
+                    population.get_total_fitness(),
+                    population.get_chromosomes()[0].get_fitness()
+                )
+            )
+            generation += 1
