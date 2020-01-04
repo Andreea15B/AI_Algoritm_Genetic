@@ -1,6 +1,0 @@
-DeJong
-1 rulari
-30 parametri
-Solutia minima: 24.0683
-Solutia maxima: 24.0683
-Media solutiilor: 24.0683
