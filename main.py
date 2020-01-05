@@ -1,6 +1,7 @@
 import numpy as np
 import copy as cp
 import random as rand
+import sys
 
 POPULATION_SIZE = 1000
 CHROMOSOME_SIZE = 10
@@ -9,6 +10,21 @@ MAX_ALLELE_VALUE = 9999999
 MAX_NUM_OF_GENERATIONS = 100000
 K_SELECTED_CHROMOSOMES = 1000
 BEST_FITNESS = 99999999
+
+NONE = 0
+SINGLE_POINT_CROSSOVER = 1
+TWO_POINTS_CROSSOVER = 2
+SINGLE_ARITHMETIC_CROSSOVER = 3
+UNIFORM_CROSSOVER = 4
+RING_CROSSOVER = 5
+UNIFORM_MUTATION = 1
+SWAP_MUTATION = 2
+SCRAMBLE_MUTATION = 3
+INVERSION_MUTATION = 4
+GAUSSIAN_MUTATION = 5
+
+g_crossover = NONE
+g_mutation = NONE
 
 class Chromosome:
     def __init__(self, generation):
@@ -89,10 +105,7 @@ class GeneticOperators:
 
     # Crossover
     def single_point_crossover(self, first_chromosome, second_chromosome, generation):
-        if ((first_chromosome.get_generation() == second_chromosome.get_generation()) and
-            (first_chromosome.get_generation() == generation - 1) and
-            (second_chromosome.get_generation() == generation - 1)):
-
+        if first_chromosome.get_generation() == second_chromosome.get_generation():
             first_offspring = Chromosome(generation)
             second_offspring = Chromosome(generation)
 
@@ -111,10 +124,7 @@ class GeneticOperators:
             return None
 
     def two_points_crossover(self, first_chromosome, second_chromosome, generation):
-        if ((first_chromosome.get_generation() == second_chromosome.get_generation()) and
-            (first_chromosome.get_generation() == generation - 1) and
-            (second_chromosome.get_generation() == generation - 1)):
-
+        if first_chromosome.get_generation() == second_chromosome.get_generation():
             first_offspring = Chromosome(generation)
             second_offspring = Chromosome(generation)
 
@@ -134,10 +144,7 @@ class GeneticOperators:
             return None
 
     def uniform_crossover(self, first_chromosome, second_chromosome, generation):
-        if ((first_chromosome.get_generation() == second_chromosome.get_generation()) and
-            (first_chromosome.get_generation() == generation - 1) and
-            (second_chromosome.get_generation() == generation - 1)):
-
+        if first_chromosome.get_generation() == second_chromosome.get_generation():
             first_offspring = Chromosome(generation)
             second_offspring = Chromosome(generation)
 
@@ -155,10 +162,7 @@ class GeneticOperators:
             return None
 
     def single_arithmetic_crossover(self,first_chromosome, second_chromosome,generation):
-        if ((first_chromosome.get_generation() == second_chromosome.get_generation()) and
-            (first_chromosome.get_generation() == generation - 1) and
-            (second_chromosome.get_generation() == generation - 1)):
-
+        if first_chromosome.get_generation() == second_chromosome.get_generation():
             first_offspring = Chromosome(generation)
             second_offspring = Chromosome(generation)
 
@@ -178,10 +182,7 @@ class GeneticOperators:
             return None
 
     def ring_crossover(self, first_chromosome, second_chromosome,generation):
-        if ((first_chromosome.get_generation() == second_chromosome.get_generation()) and
-            (first_chromosome.get_generation() == generation - 1) and
-            (second_chromosome.get_generation() == generation - 1)):
-
+        if first_chromosome.get_generation() == second_chromosome.get_generation():
             first_offspring = Chromosome(generation)
             second_offspring = Chromosome(generation)
 
@@ -262,7 +263,7 @@ class GeneticOperators:
 
         return chromosome
 
-    def gaussion_mutation(self, chromosome):
+    def gaussian_mutation(self, chromosome):
         mu, sigma = 0, 0.1  # mean and standard deviation
         s = np.random.normal(mu, sigma, 1)
 
@@ -284,18 +285,21 @@ def evolve(population, generation):
     new_size = 0
     for first_it in range(0, tournament_population.get_size()):
         for second_it in range(first_it + 1, tournament_population.get_size()):
-            offsprings = genetic_operators.ring_crossover(tournament_population.get_chromosomes()[first_it], tournament_population.get_chromosomes()[second_it], generation)
+            offsprings = create_offsprings(
+                            genetic_operators,
+                            tournament_population.get_chromosomes()[first_it],
+                            tournament_population.get_chromosomes()[second_it],
+                            generation)
 
-            if (None != offsprings) and (len(offsprings) == 2):
-                first_offspring = genetic_operators.gaussion_mutation(offsprings[0])
-                new_chromosomes.append(first_offspring)
-
-                second_offspring = genetic_operators.gaussion_mutation(offsprings[1])
-                new_chromosomes.append(second_offspring)
-
+            if offsprings != None:
+                new_chromosomes.append(offsprings[0])
+                new_chromosomes.append(offsprings[1])
                 new_size += 2
 
-        if new_size > POPULATION_SIZE:
+            if new_size == POPULATION_SIZE:
+                break
+
+        if new_size == POPULATION_SIZE:
             break
 
     if new_size == 0:
@@ -306,6 +310,51 @@ def evolve(population, generation):
     new_population.set_total_fitness(new_population.compute_total_fitness())
 
     return new_population
+
+def create_offsprings(genetic_operators, first_chromosome, second_chromosome, generation):
+    offsprings = ()
+
+    if g_crossover == SINGLE_POINT_CROSSOVER:
+        offsprings = genetic_operators.single_point_crossover(first_chromosome, second_chromosome, generation)
+    elif g_crossover == TWO_POINTS_CROSSOVER:
+        offsprings = genetic_operators.two_points_crossover(first_chromosome, second_chromosome, generation)
+    elif g_crossover == SINGLE_ARITHMETIC_CROSSOVER:
+        offsprings = genetic_operators.single_arithmetic_crossover(first_chromosome, second_chromosome, generation)
+    elif g_crossover == UNIFORM_CROSSOVER:
+        offsprings = genetic_operators.uniform_crossover(first_chromosome, second_chromosome, generation)
+    elif g_crossover == RING_CROSSOVER:
+        offsprings = genetic_operators.ring_crossover(first_chromosome, second_chromosome, generation)
+    else:
+        print("Err @ Invalid Crossover!")
+
+    if offsprings != None:
+        first_offspring = offsprings[0]
+        second_offspring = offsprings[1]
+
+        if g_mutation == UNIFORM_MUTATION:
+            first_offspring = genetic_operators.uniform_mutation(first_offspring)
+            second_offspring == genetic_operators.uniform_mutation(second_offspring)
+            offsprings = (first_offspring, second_offspring)
+        elif g_mutation == SWAP_MUTATION:
+            first_offspring = genetic_operators.swap_mutation(first_offspring)
+            second_offspring == genetic_operators.swap_mutation(second_offspring)
+            offsprings = (first_offspring, second_offspring)
+        elif g_mutation == SCRAMBLE_MUTATION:
+            first_offspring = genetic_operators.scramble_mutation(first_offspring)
+            second_offspring = genetic_operators.scramble_mutation(second_offspring)
+            offsprings = (first_offspring, second_offspring)
+        elif g_mutation == INVERSION_MUTATION:
+            first_offspring = genetic_operators.inversion_mutation(first_offspring)
+            second_offspring = genetic_operators.inversion_mutation(second_offspring)
+            offsprings = (first_offspring, second_offspring)
+        elif g_mutation == GAUSSIAN_MUTATION:
+            first_offspring = genetic_operators.gaussian_mutation(first_offspring)
+            second_offspring = genetic_operators.gaussian_mutation(second_offspring)
+            offsprings = (first_offspring, second_offspring)
+        else:
+            print("Err @ Invalid Mutation!")
+
+    return offsprings
 
 def fitness_function(chromosome):
     fitness = 0
@@ -325,7 +374,7 @@ def print_population(population, generation, most_fittest_chromosome):
     )
     print("\n---------------------------------")
 
-if __name__ == '__main__':
+def main():
     LOGS_FILE_PATH = "logs.txt"
 
     with open(LOGS_FILE_PATH, "w+") as fd:
@@ -348,7 +397,7 @@ if __name__ == '__main__':
         )
 
         generation = 1
-        while (generation < MAX_NUM_OF_GENERATIONS) and (population.get_chromosomes()[0].get_fitness() < BEST_FITNESS):
+        while (generation < MAX_NUM_OF_GENERATIONS) and (most_fittest_chromosome.get_fitness() < BEST_FITNESS):
             population = evolve(population, generation)
             population.get_chromosomes().sort(key = lambda chromosome: chromosome.get_fitness(), reverse = True)
             if population.get_chromosomes()[0].get_fitness() > most_fittest_chromosome.get_fitness():
@@ -367,3 +416,23 @@ if __name__ == '__main__':
             )
 
             generation += 1
+
+    return None
+
+if __name__ == '__main__':
+    EXPECTED_CMD_LINE_ARGS = 3
+    SCRIPT_INDEX = 0
+    CROSSOVER_INDEX = 1
+    MUTATION_INDEX = 2
+
+    if len(sys.argv) == EXPECTED_CMD_LINE_ARGS:
+        g_crossover = int(sys.argv[CROSSOVER_INDEX])
+        g_mutation = int(sys.argv[MUTATION_INDEX])
+
+        main()
+    else:
+        print("Err @ Invalid Command Line Arguments!")
+        print("Correct Syntax: python [script] [crossover] [mutation]")
+        print("[script]:", sys.argv[SCRIPT_INDEX])
+        print("[crossover]: Single Point Crossover: 1 | Two Points Crossover: 2 | Single Arithmetic Crossover: 3 | Uniform Crossover: 4 | Ring Crossover: 5")
+        print("[mutation]: Uniform Mutation: 1 | Swap Mutation: 2 | Scramble Mutation: 3 | Inversion Mutation: 4 | Gaussian Mutation: 5")
