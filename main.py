@@ -61,12 +61,6 @@ class Population:
 
     def get_chromosomes(self):
         return self.chromosomes
-    
-    def get_genes(self):
-        final = []
-        for each in self.chromosomes:
-            final.append(example_function(each.get_genes()))
-        return final
 
     def set_chromosomes(self, chromosomes):
         self.chromosomes = []
@@ -92,6 +86,12 @@ class Population:
         for it in range(self.size):
             total_fitness += self.chromosomes[it].get_fitness()
         return total_fitness
+
+    def get_genes(self):
+        final = []
+        for chromosome in self.chromosomes:
+            final.append(resenbrock_valley_function(chromosome.get_genes()))
+        return final
 
 class GeneticOperators:
     # Selection
@@ -299,6 +299,7 @@ def evolve(population, generation):
                             generation)
 
             if offsprings != None:
+                # Update each offspring's fitness
                 new_chromosomes.append(offsprings[0])
                 new_chromosomes.append(offsprings[1])
                 new_size += 2
@@ -364,9 +365,31 @@ def create_offsprings(genetic_operators, first_chromosome, second_chromosome, ge
     return offsprings
 
 def fitness_function(chromosome):
-    intervals = [(-2.048, 2.048), (-2.048, 2.048), (-2.048, 2.048),(-2.048, 2.048)]
-    fitness = example_function(chromosome.get_genes()) - penalty_function(chromosome.get_genes(), intervals)
-    return 1/fitness
+    constraints = [(-2.048, 2.048) for it in range(CHROMOSOME_SIZE)]
+    fitness = resenbrock_valley_function(chromosome.get_genes()) - penalty_function(chromosome, constraints)
+    return (1 / fitness)
+
+def penalty_function(chromosome, constraints):
+    penalty = 0
+    CONSTANT_PENALTY = 0.01
+
+    for it in range(CHROMOSOME_SIZE):
+        if (chromosome.get_genes()[it] < constraints[it][0]) or (chromosome.get_genes()[it] > constraints[it][1]):
+            penalty += (CONSTANT_PENALTY * chromosome.get_genes()[it] * chromosome.get_genes()[it])
+
+    return (1 / penalty)
+
+def resenbrock_valley_function(_list):
+    _sum = 0
+
+    list_len = len(_list)
+
+    for it in range(list_len - 1):
+        first_step = _list[it + 1] - pow(_list[it], 2)
+        second_step = 1 - _list[it]
+        _sum += (100 * pow(first_step, 2) + pow(second_step, 2))
+
+    return _sum
 
 def print_population(population, generation, most_fittest_chromosome):
     print("\n---------------------------------")
@@ -380,24 +403,6 @@ def print_population(population, generation, most_fittest_chromosome):
     )
     print("\n---------------------------------")
 
-def example_function(values):
-    # Rosenbrock's valley function
-    suma = 0
-    for i in range(len(values)-1):
-        partial = values[i+1] - pow(values[i],2)
-        partial_2 = 1 - values[i]
-        suma = suma + (100 * pow(partial,2) + pow(partial_2,2))
-    return suma
-
-
-def penalty_function(values, intervals):
-    constant_penalty = 0.01
-    penalty = 0
-    for i in range(len(values)):
-        if intervals[i][0] > values[i] or intervals[i][1] < values[i]:
-            penalty = penalty + constant_penalty * values[i]*values[i]
-    return 1/penalty
-
 def main():
     LOGS_FILE_PATH = "logs.txt"
 
@@ -408,8 +413,6 @@ def main():
         population.get_chromosomes().sort(key=lambda chromosome: fitness_function(chromosome), reverse=True)
         most_fittest_chromosome = cp.deepcopy(population.get_chromosomes()[0])
 
-        #print_population(population, 0, most_fittest_chromosome)
-        #print(population.get_genes())
         fd.write(
             "Generation #{0} | Size: {1} | Value function {2} \n".format(
                 0,
@@ -425,7 +428,6 @@ def main():
             if population.get_chromosomes()[0].get_fitness() > most_fittest_chromosome.get_fitness():
                 most_fittest_chromosome = cp.deepcopy(population.get_chromosomes()[0])
 
-            #print(population.get_genes())
             fd.write(
                 "Generation #{0} | Size: {1} | Value function: {2} \n".format(
                     generation,
@@ -435,8 +437,8 @@ def main():
             )
 
             generation += 1
-    return None
 
+    return None
 
 if __name__ == '__main__':
     EXPECTED_CMD_LINE_ARGS = 3
