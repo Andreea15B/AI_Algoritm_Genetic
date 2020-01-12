@@ -364,11 +364,9 @@ def create_offsprings(genetic_operators, first_chromosome, second_chromosome, ge
     return offsprings
 
 def fitness_function(chromosome):
-    fitness = 0
-    for allele in chromosome.get_genes():
-        fitness += allele
-    return fitness
-
+    intervals = [(-2.048, 2.048), (-2.048, 2.048), (-2.048, 2.048),(-2.048, 2.048)]
+    fitness = example_function(chromosome.get_genes()) - penalty_function(chromosome.get_genes(), intervals)
+    return 1/fitness
 
 def print_population(population, generation, most_fittest_chromosome):
     print("\n---------------------------------")
@@ -381,52 +379,6 @@ def print_population(population, generation, most_fittest_chromosome):
         most_fittest_chromosome.get_fitness())
     )
     print("\n---------------------------------")
-
-# def main():
-#     LOGS_FILE_PATH = "logs.txt"
-
-#     with open(LOGS_FILE_PATH, "w+") as fd:
-#         population = Population(POPULATION_SIZE, 0)
-#         most_fittest_chromosome = Chromosome(0)
-
-#         population.get_chromosomes().sort(key = lambda chromosome: chromosome.get_fitness(), reverse = True)
-#         most_fittest_chromosome = cp.deepcopy(population.get_chromosomes()[0])
-
-#         print_population(population, 0, most_fittest_chromosome)
-#         fd.write(
-#             "Generation #{0} | Size: {1} | Total Fitness: {2} | Fittest chromosome fitness: {3} | Most fittest chromosome generation #{4} and fitness: {5}\n".format(
-#                 0,
-#                 population.get_size(),
-#                 population.get_total_fitness(),
-#                 population.get_chromosomes()[0].get_fitness(),
-#                 most_fittest_chromosome.get_generation(),
-#                 most_fittest_chromosome.get_fitness()
-#             )
-#         )
-
-#         generation = 1
-#         while (generation < MAX_NUM_OF_GENERATIONS) and (most_fittest_chromosome.get_fitness() < BEST_FITNESS):
-#             population = evolve(population, generation)
-#             population.get_chromosomes().sort(key = lambda chromosome: chromosome.get_fitness(), reverse = True)
-#             if population.get_chromosomes()[0].get_fitness() > most_fittest_chromosome.get_fitness():
-#                 most_fittest_chromosome = cp.deepcopy(population.get_chromosomes()[0])
-
-#             print_population(population, generation, most_fittest_chromosome)
-#             fd.write(
-#                 "Generation #{0} | Size: {1} | Total Fitness: {2} | Fittest chromosome fitness: {3} | Most fittest chromosome generation #{4} and fitness: {5}\n".format(
-#                     generation,
-#                     population.get_size(),
-#                     population.get_total_fitness(),
-#                     population.get_chromosomes()[0].get_fitness(),
-#                     most_fittest_chromosome.get_generation(),
-#                     most_fittest_chromosome.get_fitness()
-#                 )
-#             )
-
-#             generation += 1
-
-#     return None
-
 
 def example_function(values):
     # Rosenbrock's valley function
@@ -441,35 +393,23 @@ def example_function(values):
 def penalty_function(values, intervals):
     constant_penalty = 0.01
     penalty = 0
-    result = example_function(values)
-
     for i in range(len(values)):
-        if intervals[i][0] > values[i] and intervals[i][1] < values[i]:
+        if intervals[i][0] > values[i] or intervals[i][1] < values[i]:
             penalty = penalty + constant_penalty * values[i]*values[i]
-
-    return result + penalty
-
-
-def total_penalty(values, intervals):
-    total = 0
-    for value in values:
-        total = total + penalty_function(value.get_genes(), intervals)
-    return total
-
+    return 1/penalty
 
 def main():
     LOGS_FILE_PATH = "logs.txt"
-    intervals = [(-2.048, 2.048), (-2.048, 2.048), (-2.048, 2.048),(-2.048, 2.048)]
 
     with open(LOGS_FILE_PATH, "w+") as fd:
         population = Population(POPULATION_SIZE, 0)
         most_fittest_chromosome = Chromosome(0)
 
-        population.get_chromosomes().sort(key=lambda chromosome: penalty_function(chromosome.get_genes(), intervals), reverse=True)
+        population.get_chromosomes().sort(key=lambda chromosome: fitness_function(chromosome), reverse=True)
         most_fittest_chromosome = cp.deepcopy(population.get_chromosomes()[0])
 
         #print_population(population, 0, most_fittest_chromosome)
-        print(population.get_genes())
+        #print(population.get_genes())
         fd.write(
             "Generation #{0} | Size: {1} | Value function {2} \n".format(
                 0,
@@ -479,13 +419,13 @@ def main():
         )
 
         generation = 1
-        while (generation < MAX_NUM_OF_GENERATIONS) and (penalty_function(most_fittest_chromosome,intervals) < BEST_FITNESS):
-            population = evolve(population, generation)
-            population.get_chromosomes().sort(key=lambda chromosome: penalty_function(chromosome.get_genes(), intervals), reverse=True)
-            if total_penalty(population.get_chromosomes(), intervals) > penalty_function(most_fittest_chromosome.get_genes(), intervals):
+        while (generation < MAX_NUM_OF_GENERATIONS):
+            population = evolve(population, generation) 
+            population.get_chromosomes().sort(key=lambda chromosome: fitness_function(chromosome), reverse=True)
+            if population.get_chromosomes()[0].get_fitness() > most_fittest_chromosome.get_fitness():
                 most_fittest_chromosome = cp.deepcopy(population.get_chromosomes()[0])
 
-            print(population.get_genes())
+            #print(population.get_genes())
             fd.write(
                 "Generation #{0} | Size: {1} | Value function: {2} \n".format(
                     generation,
@@ -496,7 +436,6 @@ def main():
 
             generation += 1
     return None
-
 
 
 if __name__ == '__main__':
