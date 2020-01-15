@@ -451,6 +451,9 @@ def benchmark_function(_list):
     for it in range(list_len):
         _sum += pow(_list[it], 2)
 
+    if _sum == 0:
+        _sum = 0.000000000000001
+
     return _sum
 
 def main():
