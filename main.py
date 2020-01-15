@@ -3,25 +3,35 @@ import copy as cp
 import random as rand
 import sys
 
-POPULATION_SIZE = 1000
-CHROMOSOME_SIZE = 4
-MIN_ALLELE_VALUE = -9999999
-MAX_ALLELE_VALUE = 9999999
+# Population and Chromosome Constants
+POPULATION_SIZE = 100
+CHROMOSOME_SIZE = 6
+MIN_ALLELE_VALUE = -5.12
+MAX_ALLELE_VALUE = 5.12
 MAX_NUM_OF_GENERATIONS = 100000
-K_SELECTED_CHROMOSOMES = 1000
-BEST_FITNESS = 99999999
+BEST_FITNESS = 0
+K_SELECTED_CHROMOSOMES = 50
 
+# None Crossover and Mutation
 NONE = 0
+
+# Crossover Flags
 SINGLE_POINT_CROSSOVER = 1
 TWO_POINTS_CROSSOVER = 2
 SINGLE_ARITHMETIC_CROSSOVER = 3
 UNIFORM_CROSSOVER = 4
 RING_CROSSOVER = 5
+AVERAGE_CROSSOVER = 6
+FLAT_CROSSOVER = 7
+
+# Mutation Flags
 UNIFORM_MUTATION = 1
 SWAP_MUTATION = 2
 SCRAMBLE_MUTATION = 3
 INVERSION_MUTATION = 4
 GAUSSIAN_MUTATION = 5
+ONE_RANDOM_SIGN_MUTATION = 6
+ONE_RANDOM_MEAN_MUTATION = 7
 
 g_crossover = NONE
 g_mutation = NONE
@@ -45,6 +55,10 @@ class Chromosome:
 
     def get_fitness(self):
         return self.fitness
+
+    def set_fitness(self, fitness):
+        self.fitness = fitness
+        return None
 
     def get_generation(self):
         return self.generation
@@ -87,12 +101,6 @@ class Population:
             total_fitness += self.chromosomes[it].get_fitness()
         return total_fitness
 
-    def get_genes(self):
-        final = []
-        for chromosome in self.chromosomes:
-            final.append(resenbrock_valley_function(chromosome.get_genes()))
-        return final
-
 class GeneticOperators:
     # Selection
     def tournament_population_selection(self, population):
@@ -104,7 +112,7 @@ class GeneticOperators:
         for it in range(K_SELECTED_CHROMOSOMES):
             tournament_population.get_chromosomes().append(population.get_chromosomes()[slected_chromosomes_indices[it]])
 
-        tournament_population.get_chromosomes().sort(key = lambda x: x.get_fitness(), reverse = True)
+        tournament_population.get_chromosomes().sort(key = lambda chromosome: chromosome.get_fitness(), reverse = True)
         tournament_population.set_chromosomes(tournament_population.get_chromosomes()[0 : J_SELECTED_CHROMOSOMES])
 
         return tournament_population
@@ -128,25 +136,27 @@ class GeneticOperators:
             return (first_offspring, second_offspring)
         else:
             return None
+
     def average_crossover(self, first_chromosome, second_chromosome, generation):
         if first_chromosome.get_generation() == second_chromosome.get_generation():
             first_offspring = Chromosome(generation)
             second_offspring = Chromosome(generation)
 
             for it in range(CHROMOSOME_SIZE):
-                first_offspring.get_genes()[it] = (first_chromosome.get_genes()[it]+second_chromosome.get_genes()[it])/2
-                second_offspring.get_genes()[it] =(first_chromosome.get_genes()[it]+second_chromosome.get_genes()[CHROMOSOME_SIZE-it-1])/2
+                first_offspring.get_genes()[it] = (first_chromosome.get_genes()[it]+second_chromosome.get_genes()[it]) / 2
+                second_offspring.get_genes()[it] = (first_chromosome.get_genes()[it]+second_chromosome.get_genes()[CHROMOSOME_SIZE - it - 1]) / 2
 
             return (first_offspring, second_offspring)
         else:
             return None
+
     def flat_crossover(self, first_chromosome, second_chromosome, generation):
         if first_chromosome.get_generation() == second_chromosome.get_generation():
             first_offspring = Chromosome(generation)
             second_offspring = Chromosome(generation)
 
             for it in range(CHROMOSOME_SIZE):
-                if first_chromosome.get_genes()[it]>second_chromosome.get_genes()[it]:
+                if first_chromosome.get_genes()[it] > second_chromosome.get_genes()[it]:
                     first_offspring.get_genes()[it] = first_chromosome.get_genes()[it]
                     second_offspring.get_genes()[it] = second_chromosome.get_genes()[it]
                 else:
@@ -157,7 +167,6 @@ class GeneticOperators:
             return (first_offspring, second_offspring)
         else:
             return None
-
 
     def two_points_crossover(self, first_chromosome, second_chromosome, generation):
         if first_chromosome.get_generation() == second_chromosome.get_generation():
@@ -301,16 +310,17 @@ class GeneticOperators:
 
     def one_random_sign_mutation(self, chromosome):
         rand_gene = rand.randrange(CHROMOSOME_SIZE)
-        chromosome.get_genes()[rand_gene] = -1*chromosome.get_genes()[rand_gene]
+        chromosome.get_genes()[rand_gene] = -1 * chromosome.get_genes()[rand_gene]
         return chromosome
 
     def one_random_mean_mutation(self, chromosome):
         rand_gene = rand.randrange(CHROMOSOME_SIZE)
-        sum=0
+        _sum = 0
         for it in range(CHROMOSOME_SIZE):
-            sum=sum+chromosome.get_genes()[it]
-        chromosome.get_genes()[rand_gene] =sum/CHROMOSOME_SIZE
+            _sum = _sum + chromosome.get_genes()[it]
+        chromosome.get_genes()[rand_gene] = _sum / CHROMOSOME_SIZE
         return chromosome
+
     def gaussian_mutation(self, chromosome):
         mu, sigma = 0, 0.1  # mean and standard deviation
         s = np.random.normal(mu, sigma, 1)
@@ -323,7 +333,6 @@ class GeneticOperators:
             chromosome.get_genes()[random_gene] = chromosome.get_genes()[random_gene] + s[0]
 
         return chromosome
-
 
 def evolve(population, generation):
     new_population = Population(0, generation)
@@ -342,7 +351,8 @@ def evolve(population, generation):
                             generation)
 
             if offsprings != None:
-                # Update each offspring's fitness
+                offsprings[0].set_fitness(fitness_function(offsprings[0]))
+                offsprings[1].set_fitness(fitness_function(offsprings[1]))
                 new_chromosomes.append(offsprings[0])
                 new_chromosomes.append(offsprings[1])
                 new_size += 2
@@ -375,9 +385,13 @@ def create_offsprings(genetic_operators, first_chromosome, second_chromosome, ge
         offsprings = genetic_operators.uniform_crossover(first_chromosome, second_chromosome, generation)
     elif g_crossover == RING_CROSSOVER:
         offsprings = genetic_operators.ring_crossover(first_chromosome, second_chromosome, generation)
+    elif g_crossover == AVERAGE_CROSSOVER:
+        offsprings = genetic_operators.average_crossover(first_chromosome, second_chromosome, generation)
+    elif g_crossover == FLAT_CROSSOVER:
+        offsprings = genetic_operators.flat_crossover(first_chromosome, second_chromosome, generation)
     else:
         print("Err @ Invalid Crossover!")
-    
+
     if offsprings != None:
         first_offspring = offsprings[0]
         second_offspring = offsprings[1]
@@ -402,49 +416,42 @@ def create_offsprings(genetic_operators, first_chromosome, second_chromosome, ge
             first_offspring = genetic_operators.gaussian_mutation(first_offspring)
             second_offspring = genetic_operators.gaussian_mutation(second_offspring)
             offsprings = (first_offspring, second_offspring)
+        elif g_mutation == ONE_RANDOM_SIGN_MUTATION:
+            first_offspring = genetic_operators.one_random_sign_mutation(first_offspring)
+            second_offspring = genetic_operators.one_random_sign_mutation(second_offspring)
+            offsprings = (first_offspring, second_offspring)
+        elif g_mutation == ONE_RANDOM_MEAN_MUTATION:
+            first_offspring = genetic_operators.one_random_mean_mutation(first_offspring)
+            second_offspring = genetic_operators.one_random_mean_mutation(second_offspring)
+            offsprings = (first_offspring, second_offspring)
         else:
             print("Err @ Invalid Mutation!")
 
     return offsprings
 
 def fitness_function(chromosome):
-    constraints = [(-2.048, 2.048) for it in range(CHROMOSOME_SIZE)]
-    fitness = resenbrock_valley_function(chromosome.get_genes()) - penalty_function(chromosome, constraints)
-    return (1 / fitness)
+    fitness = 1 / benchmark_function(chromosome.get_genes())
+    penalty = penalty_function(chromosome, fitness)
+    return fitness + penalty
 
-def penalty_function(chromosome, constraints):
+def penalty_function(chromosome, fitness):
     penalty = 0
-    CONSTANT_PENALTY = 0.01
+    CONSTANT_PENALTY = 0.1
 
-    for it in range(CHROMOSOME_SIZE):
-        if (chromosome.get_genes()[it] < constraints[it][0]) or (chromosome.get_genes()[it] > constraints[it][1]):
-            penalty += (CONSTANT_PENALTY * chromosome.get_genes()[it] * chromosome.get_genes()[it])
+    if (fitness <= -0.5) or (fitness >= 0.5):
+        penalty = fitness * CONSTANT_PENALTY
 
-    return (1 / penalty)
+    return penalty
 
-def resenbrock_valley_function(_list):
+def benchmark_function(_list):
     _sum = 0
 
     list_len = len(_list)
 
-    for it in range(list_len - 1):
-        first_step = _list[it + 1] - pow(_list[it], 2)
-        second_step = 1 - _list[it]
-        _sum += (100 * pow(first_step, 2) + pow(second_step, 2))
+    for it in range(list_len):
+        _sum += pow(_list[it], 2)
 
     return _sum
-
-def print_population(population, generation, most_fittest_chromosome):
-    print("\n---------------------------------")
-    print("Generation #{0} | Size: {1} | Total Fitness: {2} | Fittest chromosome fitness: {3} | Most fittest chromosome generation #{4} and fitness: {5}\n".format(
-        generation,
-        population.get_size(),
-        population.get_total_fitness(),
-        population.get_chromosomes()[0].get_fitness(),
-        most_fittest_chromosome.get_generation(),
-        most_fittest_chromosome.get_fitness())
-    )
-    print("\n---------------------------------")
 
 def main():
     LOGS_FILE_PATH = "logs.txt"
@@ -453,29 +460,34 @@ def main():
         population = Population(POPULATION_SIZE, 0)
         most_fittest_chromosome = Chromosome(0)
 
-        population.get_chromosomes().sort(key=lambda chromosome: fitness_function(chromosome), reverse=True)
+        population.get_chromosomes().sort(key = lambda chromosome: chromosome.get_fitness(), reverse = True)
         most_fittest_chromosome = cp.deepcopy(population.get_chromosomes()[0])
 
         fd.write(
-            "Generation #{0} | Size: {1} | Value function {2} \n".format(
+            "Generation #{0} | With Size: {1} | And Best Chromosome Benchmark: {3} | Global Best Chromosome Benchmark: {4}\n".format(
                 0,
                 population.get_size(),
-                population.get_genes()
+                population.get_chromosomes()[0].get_genes(),
+                benchmark_function(population.get_chromosomes()[0].get_genes()),
+                benchmark_function(most_fittest_chromosome.get_genes())
             )
         )
 
         generation = 1
         while (generation < MAX_NUM_OF_GENERATIONS):
-            population = evolve(population, generation) 
-            population.get_chromosomes().sort(key=lambda chromosome: fitness_function(chromosome), reverse=True)
+            population = evolve(population, generation)
+            population.get_chromosomes().sort(key = lambda chromosome: chromosome.get_fitness(), reverse = True)
+
             if population.get_chromosomes()[0].get_fitness() > most_fittest_chromosome.get_fitness():
                 most_fittest_chromosome = cp.deepcopy(population.get_chromosomes()[0])
 
             fd.write(
-                "Generation #{0} | Size: {1} | Value function: {2} \n".format(
+                "Generation #{0} | With Size: {1} | And Best Chromosome Benchmark: {3} | Global Best Chromosome Benchmark: {4}\n".format(
                     generation,
                     population.get_size(),
-                    population.get_genes()
+                    population.get_chromosomes()[0].get_genes(),
+                    benchmark_function(population.get_chromosomes()[0].get_genes()),
+                    benchmark_function(most_fittest_chromosome.get_genes())
                 )
             )
 
