@@ -128,6 +128,36 @@ class GeneticOperators:
             return (first_offspring, second_offspring)
         else:
             return None
+    def average_crossover(self, first_chromosome, second_chromosome, generation):
+        if first_chromosome.get_generation() == second_chromosome.get_generation():
+            first_offspring = Chromosome(generation)
+            second_offspring = Chromosome(generation)
+
+            for it in range(CHROMOSOME_SIZE):
+                first_offspring.get_genes()[it] = (first_chromosome.get_genes()[it]+second_chromosome.get_genes()[it])/2
+                second_offspring.get_genes()[it] =(first_chromosome.get_genes()[it]+second_chromosome.get_genes()[CHROMOSOME_SIZE-it-1])/2
+
+            return (first_offspring, second_offspring)
+        else:
+            return None
+    def flat_crossover(self, first_chromosome, second_chromosome, generation):
+        if first_chromosome.get_generation() == second_chromosome.get_generation():
+            first_offspring = Chromosome(generation)
+            second_offspring = Chromosome(generation)
+
+            for it in range(CHROMOSOME_SIZE):
+                if first_chromosome.get_genes()[it]>second_chromosome.get_genes()[it]:
+                    first_offspring.get_genes()[it] = first_chromosome.get_genes()[it]
+                    second_offspring.get_genes()[it] = second_chromosome.get_genes()[it]
+                else:
+                    first_offspring.get_genes()[it] = second_chromosome.get_genes()[it]
+                    second_offspring.get_genes()[it] = first_chromosome.get_genes()[it]
+
+
+            return (first_offspring, second_offspring)
+        else:
+            return None
+
 
     def two_points_crossover(self, first_chromosome, second_chromosome, generation):
         if first_chromosome.get_generation() == second_chromosome.get_generation():
@@ -269,6 +299,18 @@ class GeneticOperators:
 
         return chromosome
 
+    def one_random_sign_mutation(self, chromosome):
+        rand_gene = rand.randrange(CHROMOSOME_SIZE)
+        chromosome.get_genes()[rand_gene] = -1*chromosome.get_genes()[rand_gene]
+        return chromosome
+
+    def one_random_mean_mutation(self, chromosome):
+        rand_gene = rand.randrange(CHROMOSOME_SIZE)
+        sum=0
+        for it in range(CHROMOSOME_SIZE):
+            sum=sum+chromosome.get_genes()[it]
+        chromosome.get_genes()[rand_gene] =sum/CHROMOSOME_SIZE
+        return chromosome
     def gaussian_mutation(self, chromosome):
         mu, sigma = 0, 0.1  # mean and standard deviation
         s = np.random.normal(mu, sigma, 1)
@@ -281,6 +323,7 @@ class GeneticOperators:
             chromosome.get_genes()[random_gene] = chromosome.get_genes()[random_gene] + s[0]
 
         return chromosome
+
 
 def evolve(population, generation):
     new_population = Population(0, generation)
