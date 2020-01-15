@@ -8,7 +8,7 @@ POPULATION_SIZE = 100
 CHROMOSOME_SIZE = 6
 MIN_ALLELE_VALUE = -5.12
 MAX_ALLELE_VALUE = 5.12
-MAX_NUM_OF_GENERATIONS = 100000
+MAX_NUM_OF_GENERATIONS = 50000
 BEST_FITNESS = 0
 K_SELECTED_CHROMOSOMES = 50
 
@@ -510,5 +510,5 @@ if __name__ == '__main__':
         print("Err @ Invalid Command Line Arguments!")
         print("Correct Syntax: python [script] [crossover] [mutation]")
         print("[script]:", sys.argv[SCRIPT_INDEX])
-        print("[crossover]: Single Point Crossover: 1 | Two Points Crossover: 2 | Single Arithmetic Crossover: 3 | Uniform Crossover: 4 | Ring Crossover: 5")
-        print("[mutation]: Uniform Mutation: 1 | Swap Mutation: 2 | Scramble Mutation: 3 | Inversion Mutation: 4 | Gaussian Mutation: 5")
+        print("[crossover]: SINGLE_POINT_CROSSOVER: 1 | TWO_POINTS_CROSSOVER: 2 | SINGLE_ARITHMETIC_CROSSOVER: 3 | UNIFORM_CROSSOVER: 4 | RING_CROSSOVER: 5 | AVERAGE_CROSSOVER: 6 | FLAT_CROSSOVER: 7")
+        print("[mutation]: UNIFORM_MUTATION: 1 | SWAP_MUTATION: 2 | SCRAMBLE_MUTATION: 3 | INVERSION_MUTATION: 4 | GAUSSIAN_MUTATION: 5 | ONE_RANDOM_SIGN_MUTATION: 6 | ONE_RANDOM_MEAN_MUTATION: 7")
